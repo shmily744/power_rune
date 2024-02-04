@@ -7,26 +7,69 @@ namespace rm_power_rune {
     const int RED = 0;
     const int BLUE = 1;
 
-    struct TargetBlade {
-        TargetBlade() = default;
+    struct FarEnd : public cv::RotatedRect {
+        FarEnd() = default;
 
-        TargetBlade(const cv::Point2f &P1, const cv::Point2f &P2, const cv::Point2f &P3, const cv::Point2f &P4) {
-            upper_left = P1;
-            upper_right = P2;
-            lower_right = P3;
-            lower_left = P4;
+        explicit FarEnd(cv::RotatedRect box) : cv::RotatedRect(box) {
+            cv::Point2f p[4];
+            box.points(p);
+            std::sort(p, p + 4, [](const cv::Point2f &a, const cv::Point2f &b) { return a.y < b.y; });
+            top = (p[0] + p[1]) / 2;
+            bottom = (p[2] + p[3]) / 2;
 
-            center.x = ((upper_left.x + upper_right.x) / 2 + (lower_left.x + lower_right.x) / 2) / 2;
-            center.y = ((upper_left.y + upper_right.y) / 2 + (lower_left.y + lower_right.y) / 2) / 2;
+            length = cv::norm(top - bottom);
+            width = cv::norm(p[0] - p[1]);
+
+            tilt_angle = std::atan2(std::abs(top.x - bottom.x), std::abs(top.y - bottom.y));
+            tilt_angle = tilt_angle / CV_PI * 180;
+        }
+
+        int color;
+        cv::Point2f top, bottom;
+        double length;
+        double width;
+        float tilt_angle;
+    };
+
+    struct NearEnd : public cv::RotatedRect {
+        NearEnd() = default;
+
+        explicit NearEnd(cv::RotatedRect box) : cv::RotatedRect(box) {
+            cv::Point2f p[4];
+            box.points(p);
+            std::sort(p, p + 4, [](const cv::Point2f &a, const cv::Point2f &b) { return a.y < b.y; });
+            top = (p[0] + p[1]) / 2;
+            bottom = (p[2] + p[3]) / 2;
+
+            length = cv::norm(top - bottom);
+            width = cv::norm(p[0] - p[1]);
+
+            tilt_angle = std::atan2(std::abs(top.x - bottom.x), std::abs(top.y - bottom.y));
+            tilt_angle = tilt_angle / CV_PI * 180;
+        }
+
+        int color;
+        cv::Point2f top, bottom;
+        double length;
+        double width;
+        float tilt_angle;
+    };
+
+    struct Blade {
+        Blade() = default;
+
+        Blade(const FarEnd &far_end, const NearEnd &near_end) {
+
         }
 
         //以扇叶远端为上
-        cv::Point2f upper_left;
-        cv::Point2f upper_right;
-        cv::Point2f lower_right;
-        cv::Point2f lower_left;
+        cv::Point2f top_left;
+        cv::Point2f top_right;
+        cv::Point2f bottom_right;
+        cv::Point2f bottom_left;
 
         cv::Point2f center;
+        bool is_activated;
     };
 
 }// namespace rm_power_rune

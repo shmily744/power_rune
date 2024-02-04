@@ -11,7 +11,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 find_package(PythonLibs REQUIRED)
 include_directories(${PYTHON_INCLUDE_DIRS})
 
-include_directories(include)
+include_directories("${PROJECT_SOURCE_DIR}/include")
 #遍历所有Cpp文件
 file(GLOB_RECURSE CPP_FILES src/*.cpp)
 add_executable(power_rune ${CPP_FILES})
