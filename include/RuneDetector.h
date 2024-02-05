@@ -18,12 +18,26 @@ namespace rm_power_rune {
         RuneDetector(const int & bin_thres, const int & channel_thres, const int & color);
 
         std::vector<Blade> detect(const cv::Mat & input);
-        cv::Mat preprocessImage(const cv::Mat & input) const;
 
+        cv::Mat preprocessImage(const cv::Mat & input) const;
+        void findRAndEnds(const cv::Mat & rbg_img, const cv::Mat & binary_img);
+        std::vector<Blade> matchEnds(const std::vector<FarEnd> & lights, std::vector<NearEnd>);
 
         int binary_thres;
         int channel_thres;
         int detect_color;
+
+        // For debug usage
+        cv::Mat binary_img;
+        void drawResults(cv::Mat & img);
+
+    private:
+        int width;
+        int height;
+        cv::Point2f r_;
+        std::vector<FarEnd>  far_ends_;
+        std::vector<NearEnd>  near_ends_;
+        std::vector<Blade> blades_;
 
     };
 

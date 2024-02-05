@@ -9,7 +9,7 @@ int main() {
         std::cout << "Error opening video stream or file" << std::endl;
     }
 
-    rm_power_rune::RuneDetector runeDetector(170,100,rm_power_rune::BLUE);
+    rm_power_rune::RuneDetector runeDetector(180,100,rm_power_rune::BLUE);
 
     while (cap.isOpened())
     {
@@ -23,6 +23,10 @@ int main() {
         if(isSuccess)
         {
             //display frames
+
+            runeDetector.detect(rawImages);
+            runeDetector.drawResults(rawImages);
+
             imshow("Frame", rawImages);
         }else
         {
@@ -30,10 +34,10 @@ int main() {
             break;
         }
 
-        runeDetector.detect(rawImages);
 
 
-        int key = cv::waitKey(0);
+
+        int key = cv::waitKey(1);
         if (key == 'q')
         {
             std::cout << "q key is pressed by the user. Stopping the video" << std::endl;
