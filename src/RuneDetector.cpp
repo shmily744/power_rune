@@ -10,7 +10,7 @@ namespace rm_power_rune {
     }
 
     std::vector<rm_power_rune::Blade> rm_power_rune::RuneDetector::detect(const cv::Mat &input) {
-        if(width == 0&&height == 0){
+        if (width == 0 && height == 0) {
             width = input.cols;
             height = input.rows;
         }
@@ -58,20 +58,40 @@ namespace rm_power_rune {
     }
 
     void RuneDetector::findRAndEnds(const cv::Mat &rbg_img, const cv::Mat &binary_img) {
+        far_ends_.clear();
+        near_ends_.clear();
+
         using std::vector;
+
+        //轮廓及其层次结构
         vector<vector<cv::Point>> contours;
         vector<cv::Vec4i> hierarchy;
+
         cv::findContours(binary_img, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
-        drawContours(rbg_img, contours, -1, cv::Scalar(0, 255, 0), 1);
+
         double distance_r_to_center;
 
+        int contour_index = 0;
         for (const auto &contour: contours) {
-            if (contour.size() < 5) continue;
+
+            //只检测5个点以上且最外层轮廓
+            if (contour.size() < 5) {
+                contour_index++;
+                continue;
+            }
+            if (hierarchy[contour_index][3] != -1) {
+                contour_index++;
+                continue;
+            }
+
 
             auto r_rect = cv::minAreaRect(contour);
 
             float area_rect = r_rect.size.area();
-            if (area_rect >= 10000.0 || area_rect < 80) continue;
+            if (area_rect >= 10000.0 || area_rect < 80) {
+                contour_index++;
+                continue;
+            }
 
             float width_rect;
             float height_rect;
@@ -85,14 +105,14 @@ namespace rm_power_rune {
             }
 
             if (width_rect / height_rect < 4) {
-                if (area_rect > 100 && area_rect < 500) { // find R
+                if (area_rect > 80 && area_rect < 600) { // find R
                     if (height_rect / width_rect > 0.85) {
                         if (r_.x == 0 && r_.y == 0) {
                             r_ = r_rect.center;
                             distance_r_to_center = cv::norm(r_ - cv::Point2f(width / 2, height / 2));
                         } else {
                             double distance = cv::norm(r_rect.center - cv::Point2f(width / 2, height / 2));
-                            if (abs(distance - distance_r_to_center) < 1000) {
+                            if (abs(distance - distance_r_to_center)< 800) {
                                 r_ = r_rect.center;
                                 distance_r_to_center = distance;
                             }
@@ -100,21 +120,28 @@ namespace rm_power_rune {
                     }
                 } else {    //find ends
                     // find NearEnd
-                    if (area_rect > 4000 && area_rect < 6500&&width_rect / height_rect > 0.9 && width_rect / height_rect < 1.6) {
-                        if (1) {
+                    if (area_rect > 4000 && area_rect < 6500 && width_rect / height_rect > 0.9 &&
+                        width_rect / height_rect < 1.6) {
+                        if (hierarchy[contour_index][2] != -1) {
+                            auto near_end = NearEnd(r_rect, true);
+                            near_ends_.emplace_back(near_end);
+                        } else {
                             auto near_end = NearEnd(r_rect, false);
                             near_ends_.emplace_back(near_end);
                         }
                     }
 
                     // find FarEnd
-                    if (area_rect > 1100 && area_rect < 1500 && width_rect / height_rect > 2.1 && width_rect / height_rect < 2.9) {
+                    if (area_rect > 1100 && area_rect < 1500 && width_rect / height_rect > 2.1 &&
+                        width_rect / height_rect < 2.9) {
                         auto far_end = FarEnd(r_rect);
                         far_ends_.emplace_back(far_end);
                     }
                 }
             }
+            contour_index++;
         }
+
     }
 
     std::vector<Blade> rm_power_rune::RuneDetector::matchEnds(const std::vector<FarEnd> &lights, std::vector<NearEnd>) {
@@ -122,7 +149,30 @@ namespace rm_power_rune {
     }
 
     void RuneDetector::drawResults(cv::Mat &img) {
+        using std::vector;
+
+        //draw R
         cv::circle(img, r_, 15, cv::Scalar(0, 255, 255));
+        std::cout << r_ << std::endl;
+
+        //draw far_ends
+        for (auto far_end: far_ends_) {
+            vector<cv::Point> p(far_end.p,far_end.p+4);
+            vector<vector<cv::Point>> temp;
+            temp.emplace_back(p);
+            drawContours(img, temp, -1, cv::Scalar(0, 0, 255), 2);
+        }
+
+        //draw near_ends
+        for (auto near_end: near_ends_) {
+            vector<cv::Point> p(near_end.p,near_end.p+4);
+            vector<vector<cv::Point>> temp;
+            temp.emplace_back(p);
+            if(near_end.is_activated)
+                drawContours(img, temp, -1, cv::Scalar(0, 255, 0), 2);
+            else
+                drawContours(img, temp, -1, cv::Scalar(0, 0, 255), 2);
+        }
     }
 }
 

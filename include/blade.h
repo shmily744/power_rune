@@ -12,7 +12,7 @@ namespace rm_power_rune {
 
         explicit FarEnd(const cv::RotatedRect& box) : cv::RotatedRect(box) {
             box.points(p);
-            std::sort(p, p + 4, [](const cv::Point2f &a, const cv::Point2f &b) { return a.y < b.y; });
+            //std::sort(p, p + 4, [](const cv::Point2f &a, const cv::Point2f &b) { return a.y < b.y; });
         }
 
         cv::Point2f p[4];
@@ -34,7 +34,7 @@ namespace rm_power_rune {
 //            tilt_angle = std::atan2(std::abs(top.x - bottom.x), std::abs(top.y - bottom.y));
 //            tilt_angle = tilt_angle / CV_PI * 180;
             box.points(p);
-            std::sort(p, p + 4, [](const cv::Point2f &a, const cv::Point2f &b) { return a.y < b.y; });
+            //std::sort(p, p + 4, [](const cv::Point2f &a, const cv::Point2f &b) { return a.y < b.y; });
 
         }
 

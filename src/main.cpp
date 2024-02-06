@@ -37,7 +37,7 @@ int main() {
 
 
 
-        int key = cv::waitKey(1);
+        int key = cv::waitKey(0);
         if (key == 'q')
         {
             std::cout << "q key is pressed by the user. Stopping the video" << std::endl;
