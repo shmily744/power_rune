@@ -16,7 +16,7 @@ namespace rm_power_rune {
         }
 
         binary_img = preprocessImage(input);
-        findRAndEnds(input, binary_img);
+        findRAndEnds(binary_img);
 
         return {};
     }
@@ -57,7 +57,7 @@ namespace rm_power_rune {
         return bin_img;
     }
 
-    void RuneDetector::findRAndEnds(const cv::Mat &rbg_img, const cv::Mat &binary_img) {
+    void RuneDetector::findRAndEnds(const cv::Mat &bin_img) {
         far_ends_.clear();
         near_ends_.clear();
 
@@ -67,7 +67,7 @@ namespace rm_power_rune {
         vector<vector<cv::Point>> contours;
         vector<cv::Vec4i> hierarchy;
 
-        cv::findContours(binary_img, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
+        cv::findContours(bin_img, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
 
         double distance_r_to_center;
 
@@ -109,9 +109,9 @@ namespace rm_power_rune {
                     if (height_rect / width_rect > 0.85) {
                         if (r_.x == 0 && r_.y == 0) {
                             r_ = r_rect.center;
-                            distance_r_to_center = cv::norm(r_ - cv::Point2f(width / 2, height / 2));
+                            distance_r_to_center = cv::norm(r_ - cv::Point2f(static_cast<float>(width) / 2, static_cast<float>(height) / 2));
                         } else {
-                            double distance = cv::norm(r_rect.center - cv::Point2f(width / 2, height / 2));
+                            double distance = cv::norm(r_rect.center - cv::Point2f(static_cast<float>(width) / 2, static_cast<float>(height) / 2));
                             if (abs(distance - distance_r_to_center)< 800) {
                                 r_ = r_rect.center;
                                 distance_r_to_center = distance;

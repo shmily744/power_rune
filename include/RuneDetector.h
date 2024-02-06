@@ -20,7 +20,7 @@ namespace rm_power_rune {
         std::vector<Blade> detect(const cv::Mat & input);
 
         cv::Mat preprocessImage(const cv::Mat & input) const;
-        void findRAndEnds(const cv::Mat & rbg_img, const cv::Mat & binary_img);
+        void findRAndEnds(const cv::Mat & bin_img);
         std::vector<Blade> matchEnds(const std::vector<FarEnd> & lights, std::vector<NearEnd>);
 
         int binary_thres;
