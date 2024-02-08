@@ -32,13 +32,15 @@ namespace rm_power_rune {
         int drawResults(cv::Mat & img);
 
     private:
-        int width;
-        int height;
+        int width_;
+        int height_;
+        double distance_r_to_center_;
         cv::Point2f r_;
         std::pair<std::vector<FarEnd>, std::vector<NearEnd>> ends_;
         std::vector<FarEnd>  far_ends_;
         std::vector<NearEnd>  near_ends_;
         std::vector<Blade> blades_;
+
     };
 }
 #endif //POWER_RUNE_RUNEDETECTOR_H

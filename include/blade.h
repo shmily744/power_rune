@@ -10,42 +10,53 @@ namespace rm_power_rune {
     struct FarEnd : public cv::RotatedRect {
         FarEnd() = default;
 
-        explicit FarEnd(const cv::RotatedRect& box) : cv::RotatedRect(box) {
+        explicit FarEnd(const cv::RotatedRect &box, const cv::Point2f r) : cv::RotatedRect(box) {
             box.points(p);
-            //std::sort(p, p + 4, [](const cv::Point2f &a, const cv::Point2f &b) { return a.y < b.y; });
+            std::sort(p, p + 4,
+                      [&r](const cv::Point2f &a, const cv::Point2f &b) { return cv::norm(a - r) < cv::norm(b - r); });
+            corner_point_0 = p[0];
+            corner_point_1 = p[1];
+
+            cv::Point2f center = (corner_point_0+corner_point_1)/2;
+            tilt_angle = std::atan2(center.y - r.y, center.x - r.x);
+            tilt_angle = tilt_angle / CV_PI * 180;
         }
 
         cv::Point2f p[4];
+        cv::Point2f corner_point_0;
+        cv::Point2f corner_point_1;
+        double tilt_angle = 0 ;
     };
 
     struct NearEnd : public cv::RotatedRect {
         NearEnd() = default;
 
-        explicit NearEnd(cv::RotatedRect box, bool is_activated) : cv::RotatedRect(box) ,is_activated(is_activated){
-//            cv::Point2f p[4];
-//            box.points(p);
-//            std::sort(p, p + 4, [](const cv::Point2f &a, const cv::Point2f &b) { return a.y < b.y; });
-//            top = (p[0] + p[1]) / 2;
-//            bottom = (p[2] + p[3]) / 2;
-//
-//            length = cv::norm(top - bottom);
-//            width = cv::norm(p[0] - p[1]);
-//
-//            tilt_angle = std::atan2(std::abs(top.x - bottom.x), std::abs(top.y - bottom.y));
-//            tilt_angle = tilt_angle / CV_PI * 180;
+        NearEnd(const cv::RotatedRect &box, bool activated, const cv::Point2f r) : cv::RotatedRect(box) {
+            is_activated = activated;
             box.points(p);
-            //std::sort(p, p + 4, [](const cv::Point2f &a, const cv::Point2f &b) { return a.y < b.y; });
 
+            std::sort(p, p + 4,
+                      [&r](const cv::Point2f &a, const cv::Point2f &b) { return cv::norm(a - r) < cv::norm(b - r); });
+            corner_point_2 = p[2];
+            corner_point_3 = p[3];
+
+            cv::Point2f center = (corner_point_2+corner_point_3)/2;
+            tilt_angle = std::atan2(center.y - r.y, center.x - r.x);
+            tilt_angle = tilt_angle / CV_PI * 180;
         }
 
         cv::Point2f p[4];
-        bool is_activated;
+        cv::Point2f corner_point_2;
+        cv::Point2f corner_point_3;
+        double tilt_angle = 0 ;
+        bool is_activated = false;
     };
 
     struct Blade {
         Blade() = default;
 
         Blade(const FarEnd &far_end, const NearEnd &near_end) {
+            is_activated = near_end.is_activated;
 
         }
 
@@ -56,7 +67,7 @@ namespace rm_power_rune {
         cv::Point2f bottom_left;
 
         cv::Point2f center;
-        bool is_activated;
+        bool is_activated = false;
     };
 
 }// namespace rm_power_rune

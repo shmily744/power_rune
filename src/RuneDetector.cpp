@@ -5,14 +5,16 @@ namespace rm_power_rune {
             : binary_thres(bin_thres),
               channel_thres(channel_thres), detect_color(color) {
         r_ = cv::Point2f(0, 0);
-        width = 0;
-        height = 0;
+        width_ = 0;
+        height_ = 0;
+        distance_r_to_center_ = cv::norm(
+                r_ - cv::Point2f(static_cast<float>(width_) / 2, static_cast<float>(height_) / 2));
     }
 
     std::vector<rm_power_rune::Blade> rm_power_rune::RuneDetector::detect(const cv::Mat &input) {
-        if (width == 0 && height == 0) {
-            width = input.cols;
-            height = input.rows;
+        if (width_ == 0 && height_ == 0) {
+            width_ = input.cols;
+            height_ = input.rows;
         }
 
         binary_img = preprocessImage(input);
@@ -45,7 +47,7 @@ namespace rm_power_rune {
         bin_img = (subtracted_img & threshold_img);
 
 
-        cv::Mat kernel = cv::getStructuringElement(0, cv::Size(3, 3));
+        cv::Mat kernel = cv::getStructuringElement(0, cv::Size(2, 2));
         dilate(bin_img, bin_img, kernel, cv::Point(-1, -1), 1);
 
         kernel = cv::getStructuringElement(0, cv::Size(7, 7));
@@ -55,8 +57,8 @@ namespace rm_power_rune {
     }
 
     std::pair<std::vector<FarEnd>, std::vector<NearEnd>> RuneDetector::findRAndEnds(const cv::Mat &bin_img) {
-        std::vector<FarEnd>  far_ends;
-        std::vector<NearEnd>  near_ends;
+        std::vector<FarEnd> far_ends;
+        std::vector<NearEnd> near_ends;
 
         using std::vector;
 
@@ -65,8 +67,6 @@ namespace rm_power_rune {
         vector<cv::Vec4i> hierarchy;
 
         cv::findContours(bin_img, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
-
-        double distance_r_to_center;
 
         int contour_index = 0;
         for (const auto &contour: contours) {
@@ -106,13 +106,15 @@ namespace rm_power_rune {
                     if (height_rect / width_rect > 0.85) {
                         if (r_.x == 0 && r_.y == 0) {
                             r_ = r_rect.center;
-                            distance_r_to_center = cv::norm(r_ - cv::Point2f(static_cast<float>(width) / 2, static_cast<float>(height) / 2));
+                            distance_r_to_center_ = cv::norm(
+                                    r_ - cv::Point2f(static_cast<float>(width_) / 2, static_cast<float>(height_) / 2));
                         } else {
-                            double distance = cv::norm(r_rect.center - cv::Point2f(static_cast<float>(width) / 2, static_cast<float>(height) / 2));
-                            if (abs(distance - distance_r_to_center)< 800) {
+                            double distance = cv::norm(r_rect.center - cv::Point2f(static_cast<float>(width_) / 2,
+                                                                                   static_cast<float>(height_) / 2));
+                            if (abs(distance - distance_r_to_center_) < 100) {
                                 r_ = r_rect.center;
-                                distance_r_to_center = distance;
-                            }
+                                distance_r_to_center_ = distance;
+                            } else std::cout << "R jump!" << std::endl;
                         }
                     }
                 } else {    //find ends
@@ -120,28 +122,29 @@ namespace rm_power_rune {
                     if (area_rect > 4000 && area_rect < 6500 && width_rect / height_rect > 0.9 &&
                         width_rect / height_rect < 1.6) {
                         if (hierarchy[contour_index][2] != -1) {
-                            auto near_end = NearEnd(r_rect, true);
+                            auto near_end = NearEnd(r_rect, true, r_);
                             near_ends.emplace_back(near_end);
                         } else {
-                            auto near_end = NearEnd(r_rect, false);
+                            auto near_end = NearEnd(r_rect, false, r_);
                             near_ends.emplace_back(near_end);
                         }
                     }
 
                     // find FarEnd
-                    if (area_rect > 1100 && area_rect < 1500 && width_rect / height_rect > 2.1 &&
-                        width_rect / height_rect < 2.9) {
-                        auto far_end = FarEnd(r_rect);
+                    if (area_rect > 800 && area_rect < 1500 && width_rect / height_rect > 1.8 &&
+                        width_rect / height_rect < 3.5) {
+                        auto far_end = FarEnd(r_rect, r_);
                         far_ends.emplace_back(far_end);
                     }
                 }
             }
             contour_index++;
         }
-        return std::make_pair(far_ends,near_ends);
+        return std::make_pair(far_ends, near_ends);
     }
 
-    std::vector<Blade> rm_power_rune::RuneDetector::matchEnds(const std::vector<FarEnd> & far_ends, const std::vector<NearEnd> near_ends) {
+    std::vector<Blade>
+    rm_power_rune::RuneDetector::matchEnds(const std::vector<FarEnd> &far_ends, const std::vector<NearEnd> near_ends) {
         return std::vector<Blade>();
     }
 
@@ -150,27 +153,34 @@ namespace rm_power_rune {
 
         //draw R
         cv::circle(img, r_, 15, cv::Scalar(0, 255, 255));
-        std::cout << r_ << std::endl;
-
+        //std::cout << r_ << std::endl;
+        std::cout<<"##################"<<std::endl;
         //draw far_ends
         for (auto far_end: far_ends_) {
-            vector<cv::Point> p(far_end.p,far_end.p+4);
+            vector<cv::Point> p(far_end.p, far_end.p + 4);
             vector<vector<cv::Point>> temp;
             temp.emplace_back(p);
             drawContours(img, temp, -1, cv::Scalar(0, 0, 255), 2);
+            cv::circle(img, far_end.corner_point_0, 5, cv::Scalar(0, 255, 255));
+            cv::circle(img, far_end.corner_point_1, 5, cv::Scalar(0, 255, 255));
+            std::cout<<"far: "<<far_end.tilt_angle<<std::endl;
         }
 
         //draw near_ends
         for (auto near_end: near_ends_) {
-            vector<cv::Point> p(near_end.p,near_end.p+4);
+            vector<cv::Point> p(near_end.p, near_end.p + 4);
             vector<vector<cv::Point>> temp;
             temp.emplace_back(p);
-            if(near_end.is_activated)
+            if (near_end.is_activated)
                 drawContours(img, temp, -1, cv::Scalar(0, 255, 0), 2);
             else
                 drawContours(img, temp, -1, cv::Scalar(0, 0, 255), 2);
-        }
 
+            cv::circle(img, near_end.corner_point_2, 5, cv::Scalar(0, 255, 255));
+            cv::circle(img, near_end.corner_point_3, 5, cv::Scalar(0, 255, 255));
+            std::cout<<"near: "<<near_end.tilt_angle<<std::endl;
+        }
+        std::cout<<"##################"<<std::endl;
         imshow("RawImage", img);
         imshow("BinaryImage", binary_img);
 
