@@ -16,7 +16,9 @@ namespace rm_power_rune {
         }
 
         binary_img = preprocessImage(input);
-        findRAndEnds(binary_img);
+        ends_ = findRAndEnds(binary_img);
+        far_ends_ = ends_.first;
+        near_ends_ = ends_.second;
 
         return {};
     }
@@ -49,17 +51,12 @@ namespace rm_power_rune {
         kernel = cv::getStructuringElement(0, cv::Size(7, 7));
         morphologyEx(bin_img, bin_img, cv::MORPH_CLOSE, kernel);
 
-
-        cv::namedWindow("binary_img");
-        cv::resizeWindow("binary_img", 740, 620);
-        imshow("binary_img", bin_img);
-
         return bin_img;
     }
 
-    void RuneDetector::findRAndEnds(const cv::Mat &bin_img) {
-        far_ends_.clear();
-        near_ends_.clear();
+    std::pair<std::vector<FarEnd>, std::vector<NearEnd>> RuneDetector::findRAndEnds(const cv::Mat &bin_img) {
+        std::vector<FarEnd>  far_ends;
+        std::vector<NearEnd>  near_ends;
 
         using std::vector;
 
@@ -124,10 +121,10 @@ namespace rm_power_rune {
                         width_rect / height_rect < 1.6) {
                         if (hierarchy[contour_index][2] != -1) {
                             auto near_end = NearEnd(r_rect, true);
-                            near_ends_.emplace_back(near_end);
+                            near_ends.emplace_back(near_end);
                         } else {
                             auto near_end = NearEnd(r_rect, false);
-                            near_ends_.emplace_back(near_end);
+                            near_ends.emplace_back(near_end);
                         }
                     }
 
@@ -135,20 +132,20 @@ namespace rm_power_rune {
                     if (area_rect > 1100 && area_rect < 1500 && width_rect / height_rect > 2.1 &&
                         width_rect / height_rect < 2.9) {
                         auto far_end = FarEnd(r_rect);
-                        far_ends_.emplace_back(far_end);
+                        far_ends.emplace_back(far_end);
                     }
                 }
             }
             contour_index++;
         }
-
+        return std::make_pair(far_ends,near_ends);
     }
 
-    std::vector<Blade> rm_power_rune::RuneDetector::matchEnds(const std::vector<FarEnd> &lights, std::vector<NearEnd>) {
+    std::vector<Blade> rm_power_rune::RuneDetector::matchEnds(const std::vector<FarEnd> & far_ends, const std::vector<NearEnd> near_ends) {
         return std::vector<Blade>();
     }
 
-    void RuneDetector::drawResults(cv::Mat &img) {
+    int RuneDetector::drawResults(cv::Mat &img) {
         using std::vector;
 
         //draw R
@@ -173,6 +170,12 @@ namespace rm_power_rune {
             else
                 drawContours(img, temp, -1, cv::Scalar(0, 0, 255), 2);
         }
+
+        imshow("RawImage", img);
+        imshow("BinaryImage", binary_img);
+
+        int key = cv::waitKey(1);
+        return key;
     }
 }
 

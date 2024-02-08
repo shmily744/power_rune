@@ -25,26 +25,13 @@ int main() {
             //display frames
 
             runeDetector.detect(rawImages);
-            runeDetector.drawResults(rawImages);
-
-            imshow("Frame", rawImages);
+            int key = runeDetector.drawResults(rawImages);
+            if(key == 'q') break;
         }else
         {
             std::cout << "Video camera is disconnected" << std::endl;
             break;
         }
-
-
-
-
-        int key = cv::waitKey(0);
-        if (key == 'q')
-        {
-            std::cout << "q key is pressed by the user. Stopping the video" << std::endl;
-            break;
-        }
-
-
     }
     // Release the video capture object
     cap.release();

@@ -20,8 +20,8 @@ namespace rm_power_rune {
         std::vector<Blade> detect(const cv::Mat & input);
 
         cv::Mat preprocessImage(const cv::Mat & input) const;
-        void findRAndEnds(const cv::Mat & bin_img);
-        std::vector<Blade> matchEnds(const std::vector<FarEnd> & lights, std::vector<NearEnd>);
+        std::pair<std::vector<FarEnd>, std::vector<NearEnd>> findRAndEnds(const cv::Mat & bin_img);
+        std::vector<Blade> matchEnds(const std::vector<FarEnd> & far_ends, const std::vector<NearEnd> near_ends);
 
         int binary_thres;
         int channel_thres;
@@ -29,20 +29,16 @@ namespace rm_power_rune {
 
         // For debug usage
         cv::Mat binary_img;
-        void drawResults(cv::Mat & img);
+        int drawResults(cv::Mat & img);
 
     private:
         int width;
         int height;
         cv::Point2f r_;
+        std::pair<std::vector<FarEnd>, std::vector<NearEnd>> ends_;
         std::vector<FarEnd>  far_ends_;
         std::vector<NearEnd>  near_ends_;
         std::vector<Blade> blades_;
-
     };
-
-
 }
-
-
 #endif //POWER_RUNE_RUNEDETECTOR_H
