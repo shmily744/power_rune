@@ -163,6 +163,9 @@ namespace rm_power_rune {
             drawContours(img, temp, -1, cv::Scalar(0, 0, 255), 2);
             cv::circle(img, far_end.corner_point_0, 5, cv::Scalar(0, 255, 255));
             cv::circle(img, far_end.corner_point_1, 5, cv::Scalar(0, 255, 255));
+
+            cv::putText(img,"0",far_end.corner_point_0,0,0.6,cv::Scalar(0, 255, 255));
+            cv::putText(img,"1",far_end.corner_point_1,0,0.6,cv::Scalar(0, 255, 255));
             std::cout<<"far: "<<far_end.tilt_angle<<std::endl;
         }
 
@@ -178,13 +181,16 @@ namespace rm_power_rune {
 
             cv::circle(img, near_end.corner_point_2, 5, cv::Scalar(0, 255, 255));
             cv::circle(img, near_end.corner_point_3, 5, cv::Scalar(0, 255, 255));
+
+            cv::putText(img,"2",near_end.corner_point_2,0,0.6,cv::Scalar(0, 255, 255));
+            cv::putText(img,"3",near_end.corner_point_3,0,0.6,cv::Scalar(0, 255, 255));
             std::cout<<"near: "<<near_end.tilt_angle<<std::endl;
         }
         std::cout<<"##################"<<std::endl;
         imshow("RawImage", img);
         imshow("BinaryImage", binary_img);
 
-        int key = cv::waitKey(1);
+        int key = cv::waitKey(15);
         return key;
     }
 }
