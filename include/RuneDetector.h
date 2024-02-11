@@ -21,7 +21,7 @@ namespace rm_power_rune {
 
         cv::Mat preprocessImage(const cv::Mat & input) const;
         std::pair<std::vector<FarEnd>, std::vector<NearEnd>> findRAndEnds(const cv::Mat & bin_img);
-        std::vector<Blade> matchEnds(const std::vector<FarEnd> & far_ends, const std::vector<NearEnd> near_ends);
+        static std::vector<Blade> matchEnds(std::vector<FarEnd> &far_ends, std::vector<NearEnd> &near_ends);
 
         int binary_thres;
         int channel_thres;
@@ -30,6 +30,7 @@ namespace rm_power_rune {
         // For debug usage
         cv::Mat binary_img;
         int drawResults(cv::Mat & img);
+        void drawEnds(cv::Mat & img);
 
     private:
         int width_;

@@ -33,16 +33,16 @@ namespace rm_power_rune {
                 tilt_angle_1 = 360 - tilt_angle_1;
             }
 
-            if (tilt_angle_0 < 90 && tilt_angle_1 > 270){
+            if (tilt_angle_0 < 90 && tilt_angle_1 > 270) {
                 corner_point_0 = p[0];
                 corner_point_1 = p[1];
             } else if (tilt_angle_1 < 90 && tilt_angle_0 > 270) {
-                corner_point_0 = p[1];
                 corner_point_1 = p[0];
-            }else if(tilt_angle_0 > tilt_angle_1){
-                corner_point_0 = p[0];
+                corner_point_0 = p[1];
+            } else if (tilt_angle_0 > tilt_angle_1) {
                 corner_point_1 = p[1];
-            }else if(tilt_angle_0 < tilt_angle_1){
+                corner_point_0 = p[0];
+            } else if (tilt_angle_0 < tilt_angle_1) {
                 corner_point_0 = p[1];
                 corner_point_1 = p[0];
             }
@@ -89,16 +89,16 @@ namespace rm_power_rune {
                 tilt_angle_3 = 360 - tilt_angle_3;
             }
 
-            if (tilt_angle_2 < 90 && tilt_angle_3 > 270){
+            if (tilt_angle_2 < 90 && tilt_angle_3 > 270) {
                 corner_point_2 = p[3];
                 corner_point_3 = p[2];
             } else if (tilt_angle_3 < 90 && tilt_angle_2 > 270) {
-                corner_point_2 = p[2];
                 corner_point_3 = p[3];
-            }else if(tilt_angle_2 > tilt_angle_3){
-                corner_point_2 = p[3];
+                corner_point_2 = p[2];
+            } else if (tilt_angle_2 > tilt_angle_3) {
                 corner_point_3 = p[2];
-            }else if(tilt_angle_2 < tilt_angle_3){
+                corner_point_2 = p[3];
+            } else if (tilt_angle_2 < tilt_angle_3) {
                 corner_point_2 = p[2];
                 corner_point_3 = p[3];
             }
@@ -124,9 +124,14 @@ namespace rm_power_rune {
     struct Blade {
         Blade() = default;
 
-        Blade(const FarEnd &far_end, const NearEnd &near_end) {
-            is_activated = near_end.is_activated;
+        Blade( const NearEnd &near_end, const FarEnd &far_end) {
+            top_left = far_end.corner_point_0;
+            top_right = far_end.corner_point_1;
+            bottom_right = near_end.corner_point_2;
+            bottom_left = near_end.corner_point_3;
+            center = ((top_right + top_left) / 2 + (bottom_left + bottom_right) / 2) / 2;
 
+            is_activated = near_end.is_activated;
         }
 
         //以扇叶远端为上

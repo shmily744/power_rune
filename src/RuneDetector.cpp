@@ -21,6 +21,7 @@ namespace rm_power_rune {
         ends_ = findRAndEnds(binary_img);
         far_ends_ = ends_.first;
         near_ends_ = ends_.second;
+        blades_ = matchEnds(far_ends_, near_ends_);
 
         return {};
     }
@@ -144,8 +145,27 @@ namespace rm_power_rune {
     }
 
     std::vector<Blade>
-    rm_power_rune::RuneDetector::matchEnds(const std::vector<FarEnd> &far_ends, const std::vector<NearEnd> near_ends) {
-        return std::vector<Blade>();
+    rm_power_rune::RuneDetector::matchEnds(std::vector<FarEnd> &far_ends, std::vector<NearEnd> &near_ends) {
+        std::vector<Blade> blades;
+
+        if (far_ends.size() != near_ends.size())
+            std::cout << "Number mismatch between far_ends and near_ends" << std::endl;
+
+        std::sort(far_ends.begin(), far_ends.end(),
+                  [](const FarEnd &a, const FarEnd &b) { return a.tilt_angle < b.tilt_angle; });
+        std::sort(near_ends.begin(), near_ends.end(),
+                  [](const NearEnd &a, const NearEnd &b) { return a.tilt_angle < b.tilt_angle; });
+
+        for (const auto &near_end: near_ends) {
+            for (const auto &far_end: far_ends) {
+                if (abs(near_end.tilt_angle - far_end.tilt_angle) < 5) {
+                    Blade blade(near_end, far_end);
+                    blades.emplace_back(blade);
+                    break;
+                }
+            }
+        }
+        return blades;
     }
 
     int RuneDetector::drawResults(cv::Mat &img) {
@@ -154,7 +174,40 @@ namespace rm_power_rune {
         //draw R
         cv::circle(img, r_, 15, cv::Scalar(0, 255, 255));
         //std::cout << r_ << std::endl;
-        std::cout<<"##################"<<std::endl;
+
+        drawEnds(img);
+
+        for (const auto &blade: blades_) {
+            vector<cv::Point> p;
+            p.emplace_back(blade.top_left);
+            p.emplace_back(blade.top_right);
+            p.emplace_back(blade.bottom_right);
+            p.emplace_back(blade.bottom_left);
+
+            vector<vector<cv::Point>> temp;
+            temp.emplace_back(p);
+
+            if (blade.is_activated) {
+                drawContours(img, temp, -1, cv::Scalar(0, 255, 0), 2);
+                cv::circle(img, blade.center, 3, cv::Scalar(0, 255, 0), 2);
+            } else {
+                drawContours(img, temp, -1, cv::Scalar(0, 0, 255), 2);
+                cv::circle(img, blade.center, 3, cv::Scalar(0, 0, 255), 2);
+            }
+
+        }
+        //draw blades
+
+        imshow("RawImage", img);
+        imshow("BinaryImage", binary_img);
+
+        int key = cv::waitKey(15);
+        return key;
+    }
+
+    void RuneDetector::drawEnds(cv::Mat &img) {
+        using std::vector;
+        std::cout << "##################" << std::endl;
         //draw far_ends
         for (auto far_end: far_ends_) {
             vector<cv::Point> p(far_end.p, far_end.p + 4);
@@ -164,9 +217,9 @@ namespace rm_power_rune {
             cv::circle(img, far_end.corner_point_0, 5, cv::Scalar(0, 255, 255));
             cv::circle(img, far_end.corner_point_1, 5, cv::Scalar(0, 255, 255));
 
-            cv::putText(img,"0",far_end.corner_point_0,0,0.6,cv::Scalar(0, 255, 255));
-            cv::putText(img,"1",far_end.corner_point_1,0,0.6,cv::Scalar(0, 255, 255));
-            std::cout<<"far: "<<far_end.tilt_angle<<std::endl;
+            cv::putText(img, "0", far_end.corner_point_0, 0, 0.6, cv::Scalar(0, 255, 255));
+            cv::putText(img, "1", far_end.corner_point_1, 0, 0.6, cv::Scalar(0, 255, 255));
+            std::cout << "far: " << far_end.tilt_angle << std::endl;
         }
 
         //draw near_ends
@@ -182,16 +235,11 @@ namespace rm_power_rune {
             cv::circle(img, near_end.corner_point_2, 5, cv::Scalar(0, 255, 255));
             cv::circle(img, near_end.corner_point_3, 5, cv::Scalar(0, 255, 255));
 
-            cv::putText(img,"2",near_end.corner_point_2,0,0.6,cv::Scalar(0, 255, 255));
-            cv::putText(img,"3",near_end.corner_point_3,0,0.6,cv::Scalar(0, 255, 255));
-            std::cout<<"near: "<<near_end.tilt_angle<<std::endl;
+            cv::putText(img, "2", near_end.corner_point_2, 0, 0.6, cv::Scalar(0, 255, 255));
+            cv::putText(img, "3", near_end.corner_point_3, 0, 0.6, cv::Scalar(0, 255, 255));
+            std::cout << "near: " << near_end.tilt_angle << std::endl;
         }
-        std::cout<<"##################"<<std::endl;
-        imshow("RawImage", img);
-        imshow("BinaryImage", binary_img);
-
-        int key = cv::waitKey(15);
-        return key;
+        std::cout << "##################" << std::endl;
     }
 }
 
