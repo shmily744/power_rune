@@ -104,7 +104,7 @@ namespace rm_power_rune {
 
             if (width_rect / height_rect < 4) {
                 if (area_rect > 80 && area_rect < 600) { // find R
-                    if (height_rect / width_rect > 0.85) {
+                    if (height_rect / width_rect > 0.9) {
                         if (r_.x == 0 && r_.y == 0) {
                             r_ = r_rect.center;
                             distance_r_to_center_ = cv::norm(
@@ -148,8 +148,11 @@ namespace rm_power_rune {
     rm_power_rune::RuneDetector::matchEnds(std::vector<FarEnd> &far_ends, std::vector<NearEnd> &near_ends) {
         std::vector<Blade> blades;
 
-        if (far_ends.size() != near_ends.size())
+        if (far_ends.size() != near_ends.size()){
             std::cout << "Number mismatch between far_ends and near_ends" << std::endl;
+            //cv::waitKey(0);
+        }
+
 
         std::sort(far_ends.begin(), far_ends.end(),
                   [](const FarEnd &a, const FarEnd &b) { return a.tilt_angle < b.tilt_angle; });
@@ -158,6 +161,12 @@ namespace rm_power_rune {
 
         for (const auto &near_end: near_ends) {
             for (const auto &far_end: far_ends) {
+                if ((near_end.tilt_angle < 3 && far_end.tilt_angle > 357) ||
+                    (far_end.tilt_angle < 3 && near_end.tilt_angle > 357)) {
+                    Blade blade(near_end, far_end);
+                    blades.emplace_back(blade);
+                    break;
+                }
                 if (abs(near_end.tilt_angle - far_end.tilt_angle) < 5) {
                     Blade blade(near_end, far_end);
                     blades.emplace_back(blade);
@@ -166,43 +175,6 @@ namespace rm_power_rune {
             }
         }
         return blades;
-    }
-
-    int RuneDetector::drawResults(cv::Mat &img) {
-        using std::vector;
-
-        //draw R
-        cv::circle(img, r_, 15, cv::Scalar(0, 255, 255));
-        //std::cout << r_ << std::endl;
-
-        drawEnds(img);
-
-        for (const auto &blade: blades_) {
-            vector<cv::Point> p;
-            p.emplace_back(blade.top_left);
-            p.emplace_back(blade.top_right);
-            p.emplace_back(blade.bottom_right);
-            p.emplace_back(blade.bottom_left);
-
-            vector<vector<cv::Point>> temp;
-            temp.emplace_back(p);
-
-            if (blade.is_activated) {
-                drawContours(img, temp, -1, cv::Scalar(0, 255, 0), 2);
-                cv::circle(img, blade.center, 3, cv::Scalar(0, 255, 0), 2);
-            } else {
-                drawContours(img, temp, -1, cv::Scalar(0, 0, 255), 2);
-                cv::circle(img, blade.center, 3, cv::Scalar(0, 0, 255), 2);
-            }
-
-        }
-        //draw blades
-
-        imshow("RawImage", img);
-        imshow("BinaryImage", binary_img);
-
-        int key = cv::waitKey(15);
-        return key;
     }
 
     void RuneDetector::drawEnds(cv::Mat &img) {
@@ -240,6 +212,44 @@ namespace rm_power_rune {
             std::cout << "near: " << near_end.tilt_angle << std::endl;
         }
         std::cout << "##################" << std::endl;
+    }
+
+    int RuneDetector::drawResults(cv::Mat &img) {
+        using std::vector;
+
+        //draw R
+        cv::circle(img, r_, 15, cv::Scalar(0, 255, 255));
+        //std::cout << r_ << std::endl;
+
+        //drawEnds(img);
+
+        //draw blades
+        for (const auto &blade: blades_) {
+            vector<cv::Point> p;
+            p.emplace_back(blade.top_left);
+            p.emplace_back(blade.top_right);
+            p.emplace_back(blade.bottom_right);
+            p.emplace_back(blade.bottom_left);
+
+            vector<vector<cv::Point>> temp;
+            temp.emplace_back(p);
+
+            if (blade.is_activated) {
+                drawContours(img, temp, -1, cv::Scalar(0, 255, 0), 2);
+                cv::circle(img, blade.center, 3, cv::Scalar(0, 255, 0), 2);
+            } else {
+                drawContours(img, temp, -1, cv::Scalar(0, 0, 255), 2);
+                cv::circle(img, blade.center, 3, cv::Scalar(0, 0, 255), 2);
+            }
+
+        }
+
+
+        imshow("RawImage", img);
+        imshow("BinaryImage", binary_img);
+
+        int key = cv::waitKey(1);
+        return key;
     }
 }
 

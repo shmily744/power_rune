@@ -124,7 +124,7 @@ namespace rm_power_rune {
     struct Blade {
         Blade() = default;
 
-        Blade( const NearEnd &near_end, const FarEnd &far_end) {
+        Blade(const NearEnd &near_end, const FarEnd &far_end) {
             top_left = far_end.corner_point_0;
             top_right = far_end.corner_point_1;
             bottom_right = near_end.corner_point_2;
@@ -132,6 +132,10 @@ namespace rm_power_rune {
             center = ((top_right + top_left) / 2 + (bottom_left + bottom_right) / 2) / 2;
 
             is_activated = near_end.is_activated;
+            if(abs(far_end.tilt_angle - near_end.tilt_angle)>180)
+                tilt_angle = (far_end.tilt_angle + near_end.tilt_angle + 360) / 2;
+            else
+                tilt_angle = (far_end.tilt_angle + near_end.tilt_angle) / 2;
         }
 
         //以扇叶远端为上
@@ -141,6 +145,7 @@ namespace rm_power_rune {
         cv::Point2f bottom_left;
 
         cv::Point2f center;
+        double tilt_angle = 0;
         bool is_activated = false;
     };
 

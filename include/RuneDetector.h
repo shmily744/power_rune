@@ -29,8 +29,10 @@ namespace rm_power_rune {
 
         // For debug usage
         cv::Mat binary_img;
-        int drawResults(cv::Mat & img);
+
         void drawEnds(cv::Mat & img);
+        int drawResults(cv::Mat & img);
+
 
     private:
         int width_;
