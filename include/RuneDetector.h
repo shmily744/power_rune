@@ -9,6 +9,7 @@
 #include <cmath>
 #include <string>
 #include <vector>
+#include <chrono>
 
 #include "blade.h"
 
@@ -22,6 +23,7 @@ namespace rm_power_rune {
         cv::Mat preprocessImage(const cv::Mat & input) const;
         std::pair<std::vector<FarEnd>, std::vector<NearEnd>> findRAndEnds(const cv::Mat & bin_img);
         static std::vector<Blade> matchEnds(std::vector<FarEnd> &far_ends, std::vector<NearEnd> &near_ends);
+        double getAngularV(const std::vector<Blade>& blades);
 
         int binary_thres;
         int channel_thres;
@@ -38,11 +40,16 @@ namespace rm_power_rune {
         int width_;
         int height_;
         double distance_r_to_center_;
+        double angular_v_;
+        double t_;
+        double time_point_;
+
         cv::Point2f r_;
         std::pair<std::vector<FarEnd>, std::vector<NearEnd>> ends_;
         std::vector<FarEnd>  far_ends_;
         std::vector<NearEnd>  near_ends_;
         std::vector<Blade> blades_;
+        std::vector<double> last_tilt_angles_;
 
     };
 }

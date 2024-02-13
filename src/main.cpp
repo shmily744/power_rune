@@ -23,7 +23,6 @@ int main() {
         if(isSuccess)
         {
             //display frames
-
             runeDetector.detect(rawImages);
             int key = runeDetector.drawResults(rawImages);
             if(key == 'q') break;

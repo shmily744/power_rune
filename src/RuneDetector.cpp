@@ -7,6 +7,13 @@ namespace rm_power_rune {
         r_ = cv::Point2f(0, 0);
         width_ = 0;
         height_ = 0;
+        angular_v_ = 0;
+        t_ = 0;
+
+        auto now = std::chrono::system_clock::now();
+        std::chrono::duration<double> duration = now.time_since_epoch();
+        time_point_ = duration.count();
+
         distance_r_to_center_ = cv::norm(
                 r_ - cv::Point2f(static_cast<float>(width_) / 2, static_cast<float>(height_) / 2));
     }
@@ -22,6 +29,8 @@ namespace rm_power_rune {
         far_ends_ = ends_.first;
         near_ends_ = ends_.second;
         blades_ = matchEnds(far_ends_, near_ends_);
+        angular_v_ = getAngularV(blades_);
+        std::cout << angular_v_ << std::endl;
 
         return {};
     }
@@ -82,7 +91,6 @@ namespace rm_power_rune {
                 continue;
             }
 
-
             auto r_rect = cv::minAreaRect(contour);
 
             float area_rect = r_rect.size.area();
@@ -104,7 +112,7 @@ namespace rm_power_rune {
 
             if (width_rect / height_rect < 4) {
                 if (area_rect > 80 && area_rect < 600) { // find R
-                    if (height_rect / width_rect > 0.9) {
+                    if (height_rect / width_rect > 0.8) {
                         if (r_.x == 0 && r_.y == 0) {
                             r_ = r_rect.center;
                             distance_r_to_center_ = cv::norm(
@@ -148,11 +156,9 @@ namespace rm_power_rune {
     rm_power_rune::RuneDetector::matchEnds(std::vector<FarEnd> &far_ends, std::vector<NearEnd> &near_ends) {
         std::vector<Blade> blades;
 
-        if (far_ends.size() != near_ends.size()){
+        if (far_ends.size() != near_ends.size()) {
             std::cout << "Number mismatch between far_ends and near_ends" << std::endl;
-            //cv::waitKey(0);
         }
-
 
         std::sort(far_ends.begin(), far_ends.end(),
                   [](const FarEnd &a, const FarEnd &b) { return a.tilt_angle < b.tilt_angle; });
@@ -175,6 +181,56 @@ namespace rm_power_rune {
             }
         }
         return blades;
+    }
+
+    double RuneDetector::getAngularV(const std::vector<Blade> &blades) {
+        double ang_v = 0;
+        std::vector<double> delta_angles;
+
+        if (last_tilt_angles_.empty()) {
+            for (const auto &blade: blades) {
+                last_tilt_angles_.emplace_back(blade.tilt_angle);
+            }
+            auto now = std::chrono::system_clock::now();
+            std::chrono::duration<double> duration = now.time_since_epoch();
+            time_point_ = duration.count();
+            t_ = 0;
+        } else {
+            double delta_angle;
+            for (double last_tilt_angle: last_tilt_angles_) {
+                for (const auto &blade: blades) {
+                    if (last_tilt_angle > 355 && blade.tilt_angle < 5) {
+                        delta_angle = 360 - last_tilt_angle + blade.tilt_angle;
+                        delta_angles.push_back(delta_angle);
+                    } else if (abs(blade.tilt_angle - last_tilt_angle) < 5) {
+                        delta_angle =
+                                (blade.tilt_angle - last_tilt_angle) > 0 ? (blade.tilt_angle - last_tilt_angle) : 0.01;
+                        delta_angles.push_back(delta_angle);
+                    } else if (blades.size() == 1) {
+                        std::cout << "blade jump" << std::endl;
+                    }
+                }
+            }
+            last_tilt_angles_.clear();
+            for (const auto &blade: blades) {
+                last_tilt_angles_.emplace_back(blade.tilt_angle);
+            }
+            double sum = 0;
+
+            for (auto delta_a: delta_angles) {
+                sum += delta_a;
+            }
+            double delta_angle_avg = (sum / static_cast<double> (delta_angles.size())) * CV_PI / 180;
+
+            auto now = std::chrono::system_clock::now();
+            std::chrono::duration<double> duration = now.time_since_epoch();
+            double delta_t = duration.count() - time_point_;
+            time_point_ = duration.count();
+            t_ += delta_t;
+
+            ang_v = delta_angle_avg / delta_t < 2.09 ? delta_angle_avg / delta_t : 2.09;
+        }
+        return ang_v;
     }
 
     void RuneDetector::drawEnds(cv::Mat &img) {
@@ -246,9 +302,9 @@ namespace rm_power_rune {
 
 
         imshow("RawImage", img);
-        imshow("BinaryImage", binary_img);
+        //imshow("BinaryImage", binary_img);
 
-        int key = cv::waitKey(1);
+        int key = cv::waitKey(8);
         return key;
     }
 }
