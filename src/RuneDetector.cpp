@@ -1,13 +1,13 @@
 #include "RuneDetector.h"
 
 namespace rm_power_rune {
-    RuneDetector::RuneDetector(const int &bin_thres, const int &channel_thres, const int &color)
-            : binary_thres(bin_thres),
-              channel_thres(channel_thres), detect_color(color) {
+    RuneDetector::RuneDetector(const int &bin_thres, const int &channel_thres, const int &color,  const int & num_points)
+            : binary_thres(bin_thres), channel_thres(channel_thres),
+                detect_color(color) , num_points(num_points){
         r_ = cv::Point2f(0, 0);
         width_ = 0;
         height_ = 0;
-        angular_v_ = 0;
+
         t_ = 0;
 
         auto now = std::chrono::system_clock::now();
@@ -29,8 +29,7 @@ namespace rm_power_rune {
         far_ends_ = ends_.first;
         near_ends_ = ends_.second;
         blades_ = matchEnds(far_ends_, near_ends_);
-        angular_v_ = getAngularV(blades_);
-        std::cout << angular_v_ << std::endl;
+        getAngularV(blades_);
 
         return {};
     }
@@ -183,8 +182,7 @@ namespace rm_power_rune {
         return blades;
     }
 
-    double RuneDetector::getAngularV(const std::vector<Blade> &blades) {
-        double ang_v = 0;
+    void RuneDetector::getAngularV(const std::vector<Blade> &blades) {
         std::vector<double> delta_angles;
 
         if (last_tilt_angles_.empty()) {
@@ -195,6 +193,9 @@ namespace rm_power_rune {
             std::chrono::duration<double> duration = now.time_since_epoch();
             time_point_ = duration.count();
             t_ = 0;
+            angular_v_.clear();
+            vec_t_.clear();
+
         } else {
             double delta_angle;
             for (double last_tilt_angle: last_tilt_angles_) {
@@ -228,9 +229,19 @@ namespace rm_power_rune {
             time_point_ = duration.count();
             t_ += delta_t;
 
-            ang_v = delta_angle_avg / delta_t < 2.09 ? delta_angle_avg / delta_t : 2.09;
+            double angular_v;
+            angular_v = delta_angle_avg / delta_t < 2.09 ? delta_angle_avg / delta_t : 2.09;
+
+            if (vec_t_.size() <= num_points) {
+                vec_t_.emplace_back(t_);
+                angular_v_.emplace_back(angular_v);
+            } else {
+                vec_t_.erase(vec_t_.begin());
+                angular_v_.erase(angular_v_.begin());
+                vec_t_.emplace_back(t_);
+                angular_v_.emplace_back(angular_v);
+            }
         }
-        return ang_v;
     }
 
     void RuneDetector::drawEnds(cv::Mat &img) {
@@ -300,11 +311,13 @@ namespace rm_power_rune {
 
         }
 
-
+//        if (!vec_t_.empty()) {
+//            std::cout << angular_v_.back() << std::endl;
+//        }
         imshow("RawImage", img);
         //imshow("BinaryImage", binary_img);
 
-        int key = cv::waitKey(8);
+        int key = cv::waitKey(7);
         return key;
     }
 }
