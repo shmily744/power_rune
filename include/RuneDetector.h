@@ -11,23 +11,26 @@
 #include <vector>
 #include <chrono>
 
-#include "blade.h"
+#include "Blade.h"
+#include "AdamFitter.h"
 
 namespace rm_power_rune {
     class RuneDetector {
     public:
-        RuneDetector(const int & bin_thres, const int & channel_thres, const int & color);
+        RuneDetector(const int & bin_thres, const int & channel_thres, const int & color, const int & num_points);
 
         std::vector<Blade> detect(const cv::Mat & input);
 
         cv::Mat preprocessImage(const cv::Mat & input) const;
         std::pair<std::vector<FarEnd>, std::vector<NearEnd>> findRAndEnds(const cv::Mat & bin_img);
         static std::vector<Blade> matchEnds(std::vector<FarEnd> &far_ends, std::vector<NearEnd> &near_ends);
-        double getAngularV(const std::vector<Blade>& blades);
+        void getAngularV(const std::vector<Blade>& blades);
+        void rotatePoints(const cv::Point& center, std::vector<cv::Point>& Points, double angle);
 
         int binary_thres;
         int channel_thres;
         int detect_color;
+        int num_points;
 
         // For debug usage
         cv::Mat binary_img;
@@ -39,10 +42,14 @@ namespace rm_power_rune {
     private:
         int width_;
         int height_;
+
         double distance_r_to_center_;
-        double angular_v_;
         double t_;
         double time_point_;
+
+        std::vector<double> vec_t_;
+        std::vector<double> angular_v_;
+        fitter::AdamFitter adam_fitter_;
 
         cv::Point2f r_;
         std::pair<std::vector<FarEnd>, std::vector<NearEnd>> ends_;
@@ -50,6 +57,7 @@ namespace rm_power_rune {
         std::vector<NearEnd>  near_ends_;
         std::vector<Blade> blades_;
         std::vector<double> last_tilt_angles_;
+
 
     };
 }
