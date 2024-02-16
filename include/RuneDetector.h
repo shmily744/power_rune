@@ -19,7 +19,7 @@ namespace rm_power_rune {
     public:
         RuneDetector(const int & bin_thres, const int & channel_thres, const int & color, const int & num_points);
 
-        std::vector<Blade> detect(const cv::Mat & input);
+        std::vector<cv::Point> detect(const cv::Mat & input);
 
         cv::Mat preprocessImage(const cv::Mat & input) const;
         std::pair<std::vector<FarEnd>, std::vector<NearEnd>> findRAndEnds(const cv::Mat & bin_img);
@@ -46,6 +46,9 @@ namespace rm_power_rune {
         double distance_r_to_center_;
         double t_;
         double time_point_;
+
+        bool is_convergence_;
+        std::vector<cv::Point> target_points_;
 
         std::vector<double> vec_t_;
         std::vector<double> angular_v_;

@@ -1,14 +1,15 @@
 #include "RuneDetector.h"
 
 namespace rm_power_rune {
-    RuneDetector::RuneDetector(const int &bin_thres, const int &channel_thres, const int &color,  const int & num_points)
+    RuneDetector::RuneDetector(const int &bin_thres, const int &channel_thres, const int &color, const int &num_points)
             : binary_thres(bin_thres), channel_thres(channel_thres),
-                detect_color(color) , num_points(num_points){
+              detect_color(color), num_points(num_points) {
         r_ = cv::Point2f(0, 0);
         width_ = 0;
         height_ = 0;
 
         t_ = 0;
+        is_convergence_ = false;
 
         auto now = std::chrono::system_clock::now();
         std::chrono::duration<double> duration = now.time_since_epoch();
@@ -18,7 +19,7 @@ namespace rm_power_rune {
                 r_ - cv::Point2f(static_cast<float>(width_) / 2, static_cast<float>(height_) / 2));
     }
 
-    std::vector<rm_power_rune::Blade> rm_power_rune::RuneDetector::detect(const cv::Mat &input) {
+    std::vector<cv::Point> rm_power_rune::RuneDetector::detect(const cv::Mat &input) {
         if (width_ == 0 && height_ == 0) {
             width_ = input.cols;
             height_ = input.rows;
@@ -31,6 +32,40 @@ namespace rm_power_rune {
         blades_ = matchEnds(far_ends_, near_ends_);
         getAngularV(blades_);
 
+        Eigen::ArrayXd t(num_points);
+        Eigen::ArrayXd v;
+        Eigen::ArrayXd y_pre;
+        std::vector<double> result;
+
+        target_points_.clear();
+
+        if (!vec_t_.empty() || !angular_v_.empty()) {
+
+            t = Eigen::Map<Eigen::ArrayXd>(vec_t_.data(), static_cast<Eigen::Index>(vec_t_.size()));
+
+            v = Eigen::Map<Eigen::ArrayXd>(angular_v_.data(), static_cast<Eigen::Index>(angular_v_.size()));
+            is_convergence_ = adam_fitter_.Fitting(t, v, &result);
+            if (is_convergence_) {
+                double a = result[0];
+                double omega = result[1];
+                double phi = result[2];
+                double b = result[3];
+
+                double angle = (a * sin((omega * (vec_t_.back()) + phi)) + b)*0.1;
+
+                for(const auto& blade:blades_){
+                    if(!blade.is_activated){
+
+                        target_points_.emplace_back(blade.top_left);
+                        target_points_.emplace_back(blade.top_right);
+                        target_points_.emplace_back(blade.bottom_right);
+                        target_points_.emplace_back(blade.bottom_left);
+
+                        rotatePoints(r_, target_points_, -angle);
+                    }
+                }
+            }
+        }
         return {};
     }
 
@@ -232,7 +267,7 @@ namespace rm_power_rune {
             double angular_v;
             angular_v = delta_angle_avg / delta_t < 2.09 ? delta_angle_avg / delta_t : 2.09;
 
-            if (vec_t_.size() <= num_points) {
+            if (vec_t_.size() < num_points) {
                 vec_t_.emplace_back(t_);
                 angular_v_.emplace_back(angular_v);
             } else {
@@ -242,6 +277,29 @@ namespace rm_power_rune {
                 angular_v_.emplace_back(angular_v);
             }
         }
+    }
+
+    void RuneDetector::rotatePoints(const cv::Point &center, std::vector<cv::Point> &Points, double angle) {
+        // 对每个点执行旋转,其实对输入点顺序并无要求。。。仅是对输入的所有点绕center做相同角度的旋转
+        Eigen::Vector2d eigenCenter(center.x, center.y);
+        Eigen::Vector2d LeftTopPoint(Points[0].x, (Points[0].y));
+        Eigen::Vector2d RightTopPoint(Points[1].x, (Points[1].y));
+        Eigen::Vector2d RightLowPoint(Points[2].x, (Points[2].y));
+        Eigen::Vector2d LeftLowTopPoint(Points[3].x, (Points[3].y));
+
+        Eigen::Transform<double, 2, Eigen::Affine> transform;
+        transform = Eigen::Translation2d(eigenCenter) * Eigen::Rotation2Dd(angle) * Eigen::Translation2d(-eigenCenter);
+
+        LeftTopPoint = transform * LeftTopPoint;
+        RightTopPoint = transform * RightTopPoint;
+        RightLowPoint = transform * RightLowPoint;
+        LeftLowTopPoint = transform * LeftLowTopPoint;
+
+        Points.clear();
+        Points.emplace_back(LeftTopPoint.x(), LeftTopPoint.y());
+        Points.emplace_back(RightTopPoint.x(), RightTopPoint.y());
+        Points.emplace_back(RightLowPoint.x(), RightLowPoint.y());
+        Points.emplace_back(LeftLowTopPoint.x(), LeftLowTopPoint.y());
     }
 
     void RuneDetector::drawEnds(cv::Mat &img) {
@@ -307,20 +365,24 @@ namespace rm_power_rune {
             } else {
                 drawContours(img, temp, -1, cv::Scalar(0, 0, 255), 2);
                 cv::circle(img, blade.center, 3, cv::Scalar(0, 0, 255), 2);
+
             }
 
         }
 
-//        if (!vec_t_.empty()) {
-//            std::cout << angular_v_.back() << std::endl;
-//        }
+        if (is_convergence_ && !target_points_.empty()) {
+            vector<vector<cv::Point>> a;
+            a.emplace_back(target_points_);
+            drawContours(img, a, -1, cv::Scalar(0, 255, 255), 2);
+        }
+
         imshow("RawImage", img);
         //imshow("BinaryImage", binary_img);
 
-        int key = cv::waitKey(7);
+        int key = cv::waitKey(6);
         return key;
     }
-}
+}// rm_power_rune
 
 
 

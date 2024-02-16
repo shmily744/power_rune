@@ -46,7 +46,7 @@ namespace fitter {
                             double beta2 = 0.999,
                             double learning_rate = 0.1,
                             double epsilon = 1e-6,
-                            double convergence_threshold = 1e-6,
+                            double convergence_threshold = 1e-5,
                             double m_a = 0.0,
                             double v_a = 0.0,
                             double m_omega = 0.0,
