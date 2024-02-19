@@ -37,7 +37,7 @@ namespace fitter {
         static double loss(const Eigen::ArrayXd &angular_velocity, const Eigen::ArrayXd &angular_velocity_pred);
 
     public:
-        explicit AdamFitter(double a = 0.9125,
+         explicit AdamFitter(double a = 0.9125,
                             double omega = 1.9420,
                             double phi = 1.0707,
                             double b = 1.1775,

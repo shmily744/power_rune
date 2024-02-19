@@ -25,7 +25,7 @@ namespace rm_power_rune {
         std::pair<std::vector<FarEnd>, std::vector<NearEnd>> findRAndEnds(const cv::Mat & bin_img);
         static std::vector<Blade> matchEnds(std::vector<FarEnd> &far_ends, std::vector<NearEnd> &near_ends);
         void getAngularV(const std::vector<Blade>& blades);
-        void rotatePoints(const cv::Point& center, std::vector<cv::Point>& Points, double angle);
+        static void rotatePoints(const cv::Point& center, std::vector<cv::Point>& Points, double angle);
 
         int binary_thres;
         int channel_thres;
@@ -60,8 +60,6 @@ namespace rm_power_rune {
         std::vector<NearEnd>  near_ends_;
         std::vector<Blade> blades_;
         std::vector<double> last_tilt_angles_;
-
-
     };
 }
 #endif //POWER_RUNE_RUNEDETECTOR_H

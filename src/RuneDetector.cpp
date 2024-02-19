@@ -382,7 +382,4 @@ namespace rm_power_rune {
         int key = cv::waitKey(6);
         return key;
     }
-}// rm_power_rune
-
-
-
+}// namespace rm_power_rune
