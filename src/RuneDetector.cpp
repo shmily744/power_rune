@@ -51,7 +51,8 @@ namespace rm_power_rune {
                 double phi = result[2];
                 double b = result[3];
 
-                double angle = (a * sin((omega * (vec_t_.back()) + phi)) + b)*0.1;
+              
+                double angle = (a * sin((omega * (vec_t_.back()) + phi)) + b)*0.1;  //此处应用牛顿-莱布尼兹公式积分
 
                 for(const auto& blade:blades_){
                     if(!blade.is_activated){
