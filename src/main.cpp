@@ -32,7 +32,6 @@ int main() {
             auto endTime = std::chrono::steady_clock::now();
             auto elapsedTime = std::chrono::duration<double>(endTime - startTime).count();
 
-            // 如果时间间隔达到了设定的秒数，计算并输出帧率
             double fps = 1 / elapsedTime;
             std::cout << "FPS: " << fps << std::endl;
         } else {
